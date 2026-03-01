@@ -1,0 +1,443 @@
+// ============================================
+// PRISMA SCHEMA — Pharmacy Agent Platform
+// ============================================
+
+generator client {
+  provider = "prisma-client"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ============================================
+// ENUMS
+// ============================================
+
+enum Role {
+  USER
+  ADMIN
+  DELIVERY
+}
+
+enum MessageRole {
+  USER
+  SYSTEM
+}
+
+enum OrderStatus {
+  PENDING
+  CONFIRMED
+  PROCESSING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  FAILED
+  REFUNDED
+}
+
+enum PrescriptionStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+}
+
+enum AlertPriority {
+  CRITICAL
+  WARNING
+  HEADS_UP
+}
+
+enum AlertStatus {
+  PENDING
+  NOTIFIED
+  ACKNOWLEDGED
+  ORDERED
+  CANCELLED
+}
+
+enum NotificationChannel {
+  EMAIL
+  WHATSAPP
+  BOTH
+}
+
+enum NotificationType {
+  ORDER_CONFIRMED
+  ORDER_DISPATCHED
+  ORDER_DELIVERED
+  PAYMENT_PARTIAL
+  REFILL_REMINDER
+  REFILL_DONE
+  LOW_STOCK
+  PRESCRIPTION_VERIFIED
+  PRESCRIPTION_REJECTED
+}
+
+enum NotificationStatus {
+  SENT
+  FAILED
+  PENDING
+}
+
+enum ContentType {
+  TEXT
+  IMAGE
+  FILE
+}
+
+// ============================================
+// USER MODEL
+// ============================================
+
+model User {
+  id       String  @id @unique
+  email    String  @unique
+  fullName String
+  profile  String?
+  mobile   String?
+
+  role Role @default(USER)
+
+  // Relations
+  chats         Chat[]
+  orders        Order[]       @relation("UserOrders")
+  deliveries    Order[]       @relation("DeliveryOrders")
+  prescriptions Prescription[]
+  refillAlerts  RefillAlert[]
+  fileUploads   FileUpload[]
+  cartItems     CartItem[]
+  preference    UserPreference?
+  notifications NotificationLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// USER PREFERENCE
+// ============================================
+
+model UserPreference {
+  id     String @id @default(cuid())
+  userId String @unique
+
+  // Structured preferences
+  pricePreference     String? // "cheaper" | "branded" | "balanced"
+  genericAllowed      Boolean  @default(true)
+  preferredBrands     String[] // postgres text array
+  notificationChannel String? // "email" | "whatsapp" | "both"
+  autoRefillConsent   Boolean  @default(false)
+  deliveryPreference  String? // "express" | "standard"
+
+  // Free text captured passively from conversation by detectAndSavePreference tool
+  rawNotes String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ============================================
+// MEDICINE & INVENTORY
+// ============================================
+
+model Medicine {
+  id                   String  @id @default(cuid())
+  name                 String
+  genericName          String?
+  brand                String?
+  category             String
+  dosageForm           String // tablet, capsule, syrup, etc.
+  strength             String // 500mg, 10ml, etc.
+  packSize             String // "10 tablets", "100ml bottle"
+  prescriptionRequired Boolean @default(false)
+  description          String?
+  sideEffects          String?
+  imageUrl             String?
+
+  // Relations
+  batches        MedicineBatch[]
+  orderItems     OrderItem[]
+  cartItems      CartItem[]
+  alternatives   MedicineAlternative[] @relation("OriginalMedicine")
+  alternativeFor MedicineAlternative[] @relation("AlternativeMedicine")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([name])
+  @@index([genericName])
+  @@index([category])
+}
+
+// Tracks which medicine is an alternative for which
+model MedicineAlternative {
+  id            String  @id @default(cuid())
+  originalId    String
+  alternativeId String
+  reason        String? // "same generic", "same category", "cheaper option"
+
+  original    Medicine @relation("OriginalMedicine", fields: [originalId], references: [id])
+  alternative Medicine @relation("AlternativeMedicine", fields: [alternativeId], references: [id])
+
+  @@unique([originalId, alternativeId])
+  @@index([originalId])
+}
+
+model MedicineBatch {
+  id           String   @id @default(cuid())
+  medicineId   String
+  batchNumber  String
+  expiryDate   DateTime
+  quantity     Int      @default(0)
+  unitPrice    Float
+  reorderLevel Int      @default(10) // triggers fulfillment when stock hits this
+
+  medicine Medicine @relation(fields: [medicineId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([medicineId, batchNumber])
+  @@index([medicineId])
+  @@index([expiryDate])
+}
+
+// ============================================
+// CART
+// ============================================
+
+// Persisted cart — scoped per chat session
+model CartItem {
+  id         String @id @default(cuid())
+  userId     String
+  medicineId String
+  chatId     String?
+  quantity   Int    @default(1)
+
+  // Track where this cart item came from
+  source         String? // "search" | "prescription"
+  prescriptionId String? // set if added via prescription flow
+
+  addedAt   DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  medicine Medicine @relation(fields: [medicineId], references: [id])
+  chat     Chat?    @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, medicineId, chatId])
+  @@index([userId])
+  @@index([chatId])
+}
+
+// ============================================
+// CHAT & MESSAGES
+// ============================================
+
+model Chat {
+  id     String  @id @default(cuid())
+  userId String
+  title  String?
+
+  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  messages  Message[]
+  cartItems CartItem[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  chatId      String
+  role        MessageRole
+  content     String      @db.Text
+  contentType ContentType
+  toolCalls   Json? // Vercel AI SDK tool invocations
+  metadata    Json? // UI component render states, attachment refs
+
+  chat Chat @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+
+  @@index([chatId])
+}
+
+// ============================================
+// ORDERS & PAYMENTS
+// ============================================
+
+model Order {
+  id              String        @id @default(cuid())
+  userId          String
+  status          OrderStatus   @default(PENDING)
+  totalAmount     Float
+  paymentId       String?
+  paymentStatus   PaymentStatus @default(PENDING)
+  razorpayOrderId String?
+
+  // Track if this order came from a prescription
+  prescriptionId String?
+
+  // Track if this is an autorefill order
+  isAutoRefill  Boolean @default(false)
+  refillAlertId String?
+
+  // Warehouse tracking
+  warehouseRequestedAt DateTime?
+  warehouseConfirmedAt DateTime?
+  dispatchedAt         DateTime?
+  deliveredAt          DateTime?
+  trackingNumber       String?
+  warehouseNotes       String?
+
+  // Delivery assignment
+  deliveryUserId String?
+
+  user         User          @relation("UserOrders", fields: [userId], references: [id])
+  deliveryUser User?         @relation("DeliveryOrders", fields: [deliveryUserId], references: [id])
+  items        OrderItem[]
+  prescription Prescription? @relation(fields: [prescriptionId], references: [id])
+  refillAlert  RefillAlert?  @relation(fields: [refillAlertId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+  @@index([prescriptionId])
+}
+
+model OrderItem {
+  id         String @id @default(cuid())
+  orderId    String
+  medicineId String
+  quantity   Int
+  unitPrice  Float
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  medicine Medicine @relation(fields: [medicineId], references: [id])
+
+  @@index([orderId])
+}
+
+// ============================================
+// PRESCRIPTIONS
+// ============================================
+
+model Prescription {
+  id            String             @id @default(cuid())
+  userId        String
+  imageUrl      String?            // UploadThing URL
+  fileKey       String?            // UploadThing file key for deletion
+  fileName      String
+  mimeType      String
+  extractedData Json? // extracted medicine list from GPT-4 Vision
+  status        PrescriptionStatus @default(PENDING)
+  validUntil    DateTime? // issueDate + 10 days
+  doctorName    String?
+  notes         String?
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[] // orders created from this prescription
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([status])
+}
+
+// ============================================
+// REFILL ALERTS & AUTOREFILL
+// ============================================
+
+model RefillAlert {
+  id            String        @id @default(cuid())
+  userId        String
+  medicineId    String
+  medicineName  String
+  daysRemaining Int
+  priority      AlertPriority
+  status        AlertStatus   @default(PENDING)
+  notifiedAt    DateTime?
+  notifyChannel String?
+
+  // Autorefill fields
+  autoRefillEnabled  Boolean   @default(false)
+  refillIntervalDays Int? // e.g. 30 for monthly refill
+  nextRefillDate     DateTime?
+  prepaidAmount      Float? // amount user paid upfront to activate autorefill
+  creditsEarned      Float? // credits added to account after refill executes
+
+  // Razorpay payment link for refill
+  paymentLinkId  String? // Razorpay plink_xxx
+  paymentLinkUrl String? // short_url for user to pay
+
+  user   User    @relation(fields: [userId], references: [id])
+  orders Order[] // autorefill orders spawned from this alert
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([status])
+  @@index([priority])
+  @@index([nextRefillDate])
+}
+
+// ============================================
+// FILE UPLOADS
+// ============================================
+
+model FileUpload {
+  id       String @id @default(cuid())
+  userId   String
+  fileName String
+  mimeType String
+  fileUrl  String   // UploadThing URL
+  fileKey  String   // UploadThing file key for deletion
+  size     Int
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ============================================
+// NOTIFICATION LOG
+// ============================================
+
+// Tracks every notification sent — for auditing and deduplication
+model NotificationLog {
+  id        String              @id @default(cuid())
+  userId    String
+  channel   NotificationChannel
+  type      NotificationType
+  status    NotificationStatus  @default(PENDING)
+  payload   Json // the data sent with the notification
+  messageId String? // Twilio / email provider message ID
+  sentAt    DateTime?
+  error     String? // error message if status is FAILED
+
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+}
