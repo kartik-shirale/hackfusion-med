@@ -13,7 +13,7 @@ export default async function DashboardPage() {
   if ("error" in result) {
     if (result.status === 401) redirect("/sign-in");
     return (
-      <div className="flex h-screen items-center justify-center">
+      <div className="flex h-dvh items-center justify-center">
         <p className="text-muted-foreground">
           Something went wrong. Please try again.
         </p>

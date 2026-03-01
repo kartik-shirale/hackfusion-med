@@ -28,9 +28,9 @@ export const orderTracker = tool({
           },
         });
       } else {
-        // Get the most recent paid order
+        // Get the most recent order (any payment status)
         order = await prisma.order.findFirst({
-          where: { userId, paymentStatus: "PAID" },
+          where: { userId },
           orderBy: { createdAt: "desc" },
           include: {
             items: {
@@ -98,7 +98,7 @@ export const orderTracker = tool({
         orderId: order.id,
         status: order.status,
         paymentStatus: order.paymentStatus,
-        totalAmount: order.totalAmount,
+        totalAmount: Number(order.totalAmount),
         trackingNumber: order.trackingNumber,
         createdAt: order.createdAt.toISOString(),
         timeline,

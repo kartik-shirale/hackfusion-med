@@ -6,7 +6,7 @@ type Props = {
 
 const AuthLayout = ({ children }: Props) => {
   return (
-    <div className="grid min-h-svh lg:grid-cols-2">
+    <div className="grid min-h-dvh lg:grid-cols-2">
       {/* Left panel — gradient blobs + glassmorphism + text */}
       <div className="relative hidden overflow-hidden m-2 rounded-3xl lg:flex items-center justify-center bg-[#0f0f1a]">
         {/* Gradient blobs */}
@@ -40,7 +40,7 @@ const AuthLayout = ({ children }: Props) => {
         {/* Radial gradient overlay — same as main app */}
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top_left,_rgba(139,92,246,0.08)_0%,_transparent_50%),radial-gradient(ellipse_at_bottom_right,_rgba(99,102,241,0.06)_0%,_transparent_50%)]" />
         <div className="relative flex flex-1 items-center justify-center">
-          <div className="w-full max-w-xl h-full overflow-y-hidden">
+          <div className="w-full max-w-xl h-full overflow-y-auto">
             {children}
           </div>
         </div>

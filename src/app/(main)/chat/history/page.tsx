@@ -73,7 +73,7 @@ export default function HistoryPage() {
 
     return (
         <ChatLayout>
-            <ScrollArea className="flex-1">
+            <ScrollArea className="flex-1 min-h-0">
                 <div className="mx-auto max-w-7xl px-6 py-8">
                     {/* Header with inline search */}
                     <div className="mb-6">
