@@ -162,7 +162,7 @@ export const ChatMessages = ({
   }, [visibleMessages, isIdle]);
 
   return (
-    <Conversation className={cn("flex-1", className)}>
+    <Conversation className={cn("flex-1 min-h-0", className)}>
       <ConversationContent className="mx-auto max-w-4xl gap-3 md:gap-4 px-2 md:px-4 py-3 md:py-6">
         {visibleMessages.map((message, messageIndex) => {
           const isLastAssistant =

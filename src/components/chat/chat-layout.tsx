@@ -38,7 +38,7 @@ export const ChatLayout = ({
   }, [router]);
 
   return (
-    <div className={cn("relative flex flex-1 flex-col md:flex-row overflow-hidden p-0 md:p-3 md:gap-3", className)}>
+    <div className={cn("relative flex flex-1 min-h-0 flex-col md:flex-row overflow-hidden p-0 md:p-3 md:gap-3 h-full", className)}>
       {/* Mobile header — visible only on small screens */}
       <div className="flex md:hidden items-center justify-between px-3 py-2 border-b border-slate-200/40 bg-white/60 backdrop-blur-sm safe-top">
         {mode === "voice" ? (
@@ -92,7 +92,7 @@ export const ChatLayout = ({
       <PWAInstall />
 
       {/* Main chat area */}
-      <div className="relative flex flex-1 flex-col rounded-none md:rounded-2xl shadow-none md:shadow-lg">
+      <div className="relative flex flex-1 min-h-0 flex-col rounded-none md:rounded-2xl shadow-none md:shadow-lg">
         {/* Warm lavender base */}
         <div className="absolute inset-0 md:rounded-2xl bg-[#ece5f3]" />
 
@@ -106,8 +106,8 @@ export const ChatLayout = ({
         <div className="absolute top-[20%] right-0 h-60 w-72 rounded-full bg-[#e0b4c8] opacity-50 blur-[60px]" />
 
         {/* Frosted glass overlay */}
-        <div className="relative flex flex-1 flex-col overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-white/50 bg-white/60 backdrop-blur-xl">
-          <div className="flex flex-1 flex-col overflow-y-auto w-full">
+        <div className="relative flex flex-1 min-h-0 flex-col overflow-hidden rounded-none md:rounded-2xl border-0 md:border border-white/50 bg-white/60 backdrop-blur-xl">
+          <div className="flex flex-1 min-h-0 flex-col overflow-hidden w-full">
             {children}
           </div>
         </div>
