@@ -127,7 +127,7 @@ export const ChatInput = ({ onSend, disabled, className }: ChatInputProps) => {
   );
 
   return (
-    <div className={cn("px-2 md:px-4 pb-3 md:pb-4 pt-1 md:pt-2", className)}>
+    <div className={cn("px-2 md:px-4 pb-3 md:pb-4 pt-1 md:pt-2 safe-bottom", className)}>
       <div className="mx-auto max-w-3xl">
         <PromptInput
           onSubmit={handleSubmit}

@@ -76,7 +76,7 @@ export const OrderHistoryView = ({ data }: OrderHistoryViewProps) => {
                 <div
                     key={order.orderId}
                     onClick={() => router.push(`/dashboard/order/${order.orderId}`)}
-                    className="group flex items-center gap-3 rounded-2xl border border-white/70 bg-white/60 px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(0,0,0,0.02)] cursor-pointer transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
+                    className="group flex flex-wrap md:flex-nowrap items-center gap-3 rounded-2xl border border-white/70 bg-white/60 px-4 py-3 shadow-[0_2px_8px_rgba(0,0,0,0.04),inset_0_1px_2px_rgba(0,0,0,0.02)] cursor-pointer transition-all hover:shadow-[0_4px_12px_rgba(0,0,0,0.08)]"
                 >
                     {/* Icon */}
                     <div className="flex size-8 shrink-0 items-center justify-center rounded-full bg-[#1A1A2F]/5">

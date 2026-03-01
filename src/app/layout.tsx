@@ -1,4 +1,4 @@
-import { type Metadata } from "next";
+import { type Metadata, type Viewport } from "next";
 import {
   ClerkProvider,
   SignInButton,
@@ -28,6 +28,14 @@ export const metadata: Metadata = {
     "Search medicines, upload prescriptions, manage orders — all through AI-powered chat.",
 };
 
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -43,7 +51,7 @@ export default function RootLayout({
           <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased overflow-hidden h-dvh`}
         >
           <TooltipProvider>{children}</TooltipProvider>
           <PWARegister />

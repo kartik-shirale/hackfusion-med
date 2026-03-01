@@ -145,7 +145,7 @@ export const PaymentCard = ({
   return (
     <div
       className={cn(
-        "rounded-xl border bg-card w-80",
+        "rounded-xl border bg-card w-full max-w-80",
         isPaid && "border-[#1A1A2F]/30 bg-[#1A1A2F]/5 dark:bg-[#1A1A2F]/10",
       )}
     >

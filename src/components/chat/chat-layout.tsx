@@ -40,7 +40,7 @@ export const ChatLayout = ({
   return (
     <div className={cn("relative flex flex-1 flex-col md:flex-row overflow-hidden p-0 md:p-3 md:gap-3", className)}>
       {/* Mobile header — visible only on small screens */}
-      <div className="flex md:hidden items-center justify-between px-3 py-2 border-b border-slate-200/40 bg-white/60 backdrop-blur-sm">
+      <div className="flex md:hidden items-center justify-between px-3 py-2 border-b border-slate-200/40 bg-white/60 backdrop-blur-sm safe-top">
         {mode === "voice" ? (
           <button
             className="flex items-center gap-1.5"
@@ -125,6 +125,7 @@ export const ChatLayout = ({
           <CiMenuBurger className="size-3" />
         </button>
       )}
+
 
       {/* Floating cart */}
       {showCart && <CartSheet />}
